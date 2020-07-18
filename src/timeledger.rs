@@ -138,10 +138,13 @@ impl Timeledger {
             }
         );
 
+        let mut days = m.iter().collect::<Vec<(&chrono::DateTime<Utc>, &chrono::Duration)>>();
+        days.sort_by(|a, b| a.0.cmp(&b.0));
+
         report.push_str("# -------------- #\n");
         report.push_str("# Hours per Week #\n");
         report.push_str("# -------------- #\n");
-        for (date, total_time) in m.iter() {
+        for (date, total_time) in days.iter() {
             report.push_str(&format!("{}: {}hrs\n", date.format("%Y-%m-%d").to_string(),
                                                     round::half_away_from_zero(total_time.num_minutes() as f64 / 60.0, 2).to_string()));
         }
