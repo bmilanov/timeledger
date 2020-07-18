@@ -15,7 +15,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let timeledger = timeledger::Timeledger::from_file(&app_options.ledger)?;
 
+    println!("{}", timeledger.report_hours_per_tag());
     println!("{}", timeledger.report_hours_per_day());
+    println!("{}", timeledger.report_hours_per_week());
 
     Ok(())
 }
