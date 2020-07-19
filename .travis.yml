@@ -1,3 +1,25 @@
 language: rust
 rust:
-    - stable
+- stable
+
+os: linux
+dist: xenial
+
+GITHUB_TOKEN: &GITHUB_TOKEN
+    secure: JUexB7bSvdKXm+2lzeTmNSccYXlhm1hFycjtsUQ8GNdwdQ4Widui9i++GE2ZY93qPUY25zamGygJXW3PQK4Afsn+GcPx+Zpcuw1HxoWeav/+q4cFNcrhYGVrNWeXpCUAILHxilYOTiRe/6PHNcr4eR08nR1/9EExpYWlj6U5jKfCOdeoty/ZcOZgucGFjCqRWrYit1BJzHbtJZ2ZhywTd4C5gwbD0hYYkeLcAFJgZOJSancd4bwOLCYxK+4MRCyAjT3PVLYddT9Coj2FfACkgfTfeh5BmJrunlqUoE0yStEkZtK2VMIxecWVnm9eNkim7EVhR4eLgEtH7Rp74doIIsJ8BTeOPTwl6LMberLPm+SwsqVWfq/blDoEc8OAReVGgNrCAFfOZeJsvJ8CUOvQkYfnlBA/Lte4kF8AUNFj71HTLi8Scxu7Av6Z8DfxMbDUrgIiqRCGK8BkfOqO6PZcY6psfX0Wuyzn5bUDe9vKKc1K+N+sulP1DIrgmpdFBZSbZWFzWL1vrxa8rWL0SJuerKudbfiPh8uufqMhoN1YqHRhYKEhSky0YRN123nKOJZ6ThMspfnJ/PcSqJSTmfumxXvwaZNMbOjY9KerustZPHDKi+L6P6WPvl8wI8Rgdr4VoAAdQ8lh74ge2cNpSlcrMG/LlO/P8aOx6SMh6Do13UI=
+
+#before_deploy:
+#  # Set up git user name and tag this commit
+#  - git config --local user.name "bmilanov"
+#  - git config --local user.email "bmilanov11@gmail.com"
+#  - export TRAVIS_TAG=${TRAVIS_TAG:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)}
+#  - git tag $TRAVIS_TAG
+
+deploy:
+  provider: releases
+  token: *GITHUB_TOKEN
+  file: target/debug/timeledger
+  skip_cleanup: true
+  on:
+    repo: bmilanov/timeledger
+    tags: true
