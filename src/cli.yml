@@ -1,5 +1,5 @@
 name: timeledger
-version: "0.1.0"
+version: "0.1.1"
 args:
     - ledger:
         long: ledger
