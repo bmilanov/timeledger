@@ -1,6 +1,5 @@
 name: timeledger
 version: "0.0.1"
-author: Biser Milanov <bmilanov11@gmail.com>
 args:
     - ledger:
         long: ledger
