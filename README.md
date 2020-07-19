@@ -15,3 +15,9 @@ The project aims to:
 # The timeledger format
 
 The timeledger file is a JSON-formatted list of entries about tasks.
+
+# Alternatives
+
+Timewarrior: https://timewarrior.net/
+Taskwarrior: https://taskwarrior.org/
+Project Hamster: http://projecthamster.org/
