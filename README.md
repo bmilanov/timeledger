@@ -2,6 +2,8 @@
 
 Timeledger is a system that tracks time based on tasks and tags.
 
+Check out [Releases] for pre-built binaries.
+
 The project aims to:
 
     1. Give users visibility on how they spend their time
@@ -23,3 +25,5 @@ Timewarrior: https://timewarrior.net/
 Taskwarrior: https://taskwarrior.org/
 
 Project Hamster: http://projecthamster.org/
+
+[Releases]: https://github.com/bmilanov/timeledger/releases
