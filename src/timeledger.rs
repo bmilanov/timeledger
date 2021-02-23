@@ -3,9 +3,13 @@ mod json_timeledger;
 use chrono::{prelude::*, DateTime, Utc};
 use math::round;
 use std::collections::HashMap;
+use std::fmt;
+use std::fmt::{ Debug, Display, Formatter };
 use std::fs;
 
-#[derive(Debug)]
+use super::output::{ LogLevel, Out };
+
+#[derive(Debug, PartialOrd)]
 struct Task {
     start: DateTime<Utc>,
     end: DateTime<Utc>,
@@ -13,19 +17,62 @@ struct Task {
     tags: Vec<String>
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialOrd)]
 struct Day {
     date: DateTime<Utc>,
     tasks: Vec<Task>
 }
 
-#[derive(Debug)]
-pub struct Timeledger {
-    days: Vec<Day>,
+impl PartialEq for Task {
+    fn eq(&self, other: &Self) -> bool {
+        (self.start == other.start) &&
+            (self.end == other.end)
+    }
 }
 
-impl Timeledger {
-    pub fn from_json(json: &String) -> Result<Timeledger, std::io::Error> {
+impl Display for Day {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.date)
+    }
+}
+
+impl PartialEq for Day {
+    fn eq(&self, other: &Self) -> bool {
+        self.date == other.date
+    }
+}
+
+#[derive(Debug)]
+pub struct Timeledger<'a, T: Out + Debug> {
+    out: &'a T,
+    days: Vec<Day>
+}
+
+impl<'a, T> Timeledger<'a, T>
+  where T: Out + Debug,
+{
+    /* TODO: In nightly: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.is_sorted */
+    fn are_days_valid(out: &T, days: &Vec<Day>) -> bool {
+        if days.len() < 2 {
+            return true;
+        }
+
+        let mut prev_day = &days[0];
+        let mut are_days_valid = true;
+
+        for day in days[1..].iter() {
+            if prev_day >= day {
+                are_days_valid = false;
+                out.log(LogLevel::Warn, format_args!("{} appears before {}", prev_day, day));
+            }
+            prev_day = day;
+        }
+
+        are_days_valid
+    }
+
+    pub fn from_json(out: &'a T, json: &String) -> Result<Timeledger<'a, T>, std::io::Error>
+    {
         let json_timeledger = json_timeledger::JsonTimeledger::new(json)?;
 
         let days: Vec<Day> = json_timeledger.timeledger.iter().map(
@@ -50,15 +97,21 @@ impl Timeledger {
             }
         ).flatten().collect();
 
+        if !Timeledger::<T>::are_days_valid(out, &days) {
+            out.log(LogLevel::Warn, format_args!("Ledger contains at least one day that is not in order"));
+        }
+
         Ok(Timeledger {
+            out: out,
             days: days
         })
     }
 
-    pub fn from_file(filename: &String) -> Result<Timeledger, std::io::Error> {
+    pub fn from_file(out: &'a T, filename: &String) -> Result<Timeledger<'a, T>, std::io::Error>
+    {
         let json = fs::read_to_string(filename)?;
 
-        Timeledger::from_json(&json)
+        Timeledger::from_json(out, &json)
     }
 
     pub fn report_hours_per_day(&self) -> String {
