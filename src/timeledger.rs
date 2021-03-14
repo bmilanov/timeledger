@@ -17,6 +17,12 @@ struct Task {
     tags: Vec<String>
 }
 
+impl Display for Task {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} - {}: {}", self.start, self.end, self.description)
+    }
+}
+
 #[derive(Debug, PartialOrd)]
 struct Day {
     date: DateTime<Utc>,
@@ -58,9 +64,13 @@ impl<'a, T> Timeledger<'a, T>
         }
 
         let mut prev_day = &days[0];
-        let mut are_days_valid = true;
+        let mut are_days_valid = Timeledger::<T>::are_hours_valid(out, &days[0].tasks);
 
         for day in days[1..].iter() {
+            if !Timeledger::<T>::are_hours_valid(out, &day.tasks) {
+                are_days_valid = false;
+            }
+
             if prev_day >= day {
                 are_days_valid = false;
                 out.log(LogLevel::Warn, format_args!("{} appears before {}", prev_day, day));
@@ -69,6 +79,23 @@ impl<'a, T> Timeledger<'a, T>
         }
 
         are_days_valid
+    }
+
+    fn are_hours_valid(out: &T, tasks: &Vec<Task>) -> bool {
+
+        let mut are_hours_valid = true;
+
+        for (i, task) in tasks.iter().enumerate() {
+            for other in tasks[(i+1)..].iter() {
+                if other.start <= task.end {
+                    out.log(LogLevel::Warn, format_args!("Task \"{}\" overlaps with task \"{}\"", task, other));
+
+                    are_hours_valid = false;
+                }
+            }
+        }
+
+        are_hours_valid
     }
 
     pub fn from_json(out: &'a T, json: &String) -> Result<Timeledger<'a, T>, std::io::Error>
@@ -98,7 +125,7 @@ impl<'a, T> Timeledger<'a, T>
         ).flatten().collect();
 
         if !Timeledger::<T>::are_days_valid(out, &days) {
-            out.log(LogLevel::Warn, format_args!("Ledger contains at least one day that is not in order"));
+            out.log(LogLevel::Warn, format_args!("Ledger contains at least one issue, e.g. days or tasks are out of order, or tasks overlap"));
         }
 
         Ok(Timeledger {
