@@ -25,7 +25,7 @@ impl Log for TestOut {
 impl Out for TestOut {}
 
 #[test]
-fn timeledger_valid() -> Result<(), Box<dyn Error>> {
+fn days_out_of_order() -> Result<(), Box<dyn Error>> {
 
     let past_day_in_future = String::from(r#"
 {
@@ -34,8 +34,8 @@ fn timeledger_valid() -> Result<(), Box<dyn Error>> {
         {
             "2019-08-05":
             [
-                [ "09:30", "09:40", "Task A", "tag1", "tag2", "tag3" ],
-                [ "09:40", "10:40", "Task B", "tag2", "tag3", "tag4" ],
+                [ "09:30", "09:39", "Task A", "tag1", "tag2", "tag3" ],
+                [ "09:40", "10:39", "Task B", "tag2", "tag3", "tag4" ],
                 [ "10:40", "10:50", "Task C", "tag3", "tag4", "tag5" ]
             ]
         },
@@ -63,9 +63,68 @@ fn timeledger_valid() -> Result<(), Box<dyn Error>> {
 
     let _timeledger = timeledger::Timeledger::from_json(&test_out, &past_day_in_future)?;
 
-    let actual = test_out.buffer.borrow_mut().pop().unwrap();
+    let actual = test_out.buffer.borrow().clone();
 
-    assert_eq!(actual, "Ledger contains at least one day that is not in order");
+    let expected = vec![
+        "2019-08-05 00:00:00 UTC appears before 2019-08-03 00:00:00 UTC",
+        "Ledger contains at least one issue, e.g. days or tasks are out of order, or tasks overlap"
+    ];
+
+    assert_eq!(actual, expected);
+
+    Ok(())
+}
+
+#[test]
+fn tasks_overlap() -> Result<(), Box<dyn Error>> {
+
+    let past_day_in_future = String::from(r#"
+{
+    "timeledger":
+    [
+        {
+            "2019-08-05":
+            [
+                [ "12:30", "14:40", "Task A", "tag1", "tag2", "tag3" ],
+                [ "09:40", "10:39", "Task B", "tag2", "tag3", "tag4" ],
+                [ "10:40", "10:50", "Task C", "tag3", "tag4", "tag5" ]
+            ]
+        },
+        {
+            "2019-08-06":
+            [
+                [ "14:49", "15:19", "Task A", "tag1", "tag2", "tag3" ],
+                [ "12:30", "12:54", "Task D", "tag2", "tag3", "tag4" ],
+                [ "15:20", "17:11", "Task F", "tag3", "tag4", "tag5" ]
+            ]
+        },
+        {
+            "2019-08-07":
+            [
+                [ "11:49", "12:20", "Task A", "tag1", "tag2", "tag3" ],
+                [ "12:30", "15:20", "Task D", "tag2", "tag3", "tag4" ],
+                [ "15:20", "17:11", "Task F", "tag3", "tag4", "tag5" ]
+            ]
+        }
+    ]
+}
+"#);
+
+    let test_out = TestOut { buffer: RefCell::new(vec![]) };
+
+    let _timeledger = timeledger::Timeledger::from_json(&test_out, &past_day_in_future)?;
+
+    let actual = test_out.buffer.borrow().clone();
+
+    let expected = vec![
+        "Task \"2019-08-05 12:30:00 UTC - 2019-08-05 14:40:00 UTC: Task A\" overlaps with task \"2019-08-05 09:40:00 UTC - 2019-08-05 10:39:00 UTC: Task B\"",
+        "Task \"2019-08-05 12:30:00 UTC - 2019-08-05 14:40:00 UTC: Task A\" overlaps with task \"2019-08-05 10:40:00 UTC - 2019-08-05 10:50:00 UTC: Task C\"",
+        "Task \"2019-08-06 14:49:00 UTC - 2019-08-06 15:19:00 UTC: Task A\" overlaps with task \"2019-08-06 12:30:00 UTC - 2019-08-06 12:54:00 UTC: Task D\"",
+        "Task \"2019-08-07 12:30:00 UTC - 2019-08-07 15:20:00 UTC: Task D\" overlaps with task \"2019-08-07 15:20:00 UTC - 2019-08-07 17:11:00 UTC: Task F\"",
+        "Ledger contains at least one issue, e.g. days or tasks are out of order, or tasks overlap"
+    ];
+
+    assert_eq!(actual, expected);
 
     Ok(())
 }
